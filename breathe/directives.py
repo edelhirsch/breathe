@@ -270,6 +270,7 @@ class DoxygenClassLikeDirective(BaseDirective):
         "protected-members": flag,
         "private-members": flag,
         "undoc-members": flag,
+        "qml-members": flag,
         "show": unchanged_required,
         "outline": flag,
         "no-link": flag,

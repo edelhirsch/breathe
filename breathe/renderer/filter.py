@@ -815,6 +815,25 @@ class FilterFactory(object):
 
         return filter_
 
+    def _create_qml_members_filter(self, options):
+
+        node = Node()
+        node_is_memberdef = node.node_type == "memberdef"
+        node_is_property = node.kind == "property"
+        node_is_slot = node.kind == "slot"
+
+        parent = Parent()
+        parent_is_sectiondef = parent.node_type == "sectiondef"
+
+        # Nothing with a parent that's a sectiondef
+        is_memberdef = parent_is_sectiondef & node_is_memberdef
+        filter_ = ~ is_memberdef
+
+        if 'qml-members' in options:
+            filter_ = ~ is_memberdef | node_is_property | node_is_slot
+
+        return filter_
+
     def _create_undoc_members_filter(self, options):
 
         node = Node()
@@ -862,9 +881,14 @@ class FilterFactory(object):
 
         undoc_members = self._create_undoc_members_filter(options)
 
-        # Allow any public/private members which also fit the undoc filter and all the descriptions
-        allowed_members = (public_members | protected_members | private_members) & undoc_members
-        return allowed_members | description
+        if 'qml-members' in options:
+            qml_members = self._create_qml_members_filter(options)
+            return qml_members
+
+        else:
+            # Allow any public/private members which also fit the undoc filter and all the descriptions
+            allowed_members = (public_members | protected_members | private_members) & undoc_members
+            return allowed_members | description
 
     def create_outline_filter(self, options):
         if 'outline' in options:
