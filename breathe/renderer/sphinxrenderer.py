@@ -1022,6 +1022,27 @@ class SphinxRenderer(object):
         finder.content.extend(self.description(node))
         return nodes
 
+    def visit_property(self, node):
+
+        templatePrefix = self.create_template_prefix(node)
+        signature = '{0}{1}'.format(
+            templatePrefix,
+            get_definition_without_template_args(node))
+
+        self.context.directive_args[1] = [signature]
+
+        nodes = self.run_domain_directive("variable", self.context.directive_args[1])
+        rst_node = nodes[1]
+        finder = NodeFinder(rst_node.document)
+        rst_node.walk(finder)
+
+        # Templates have multiple signature nodes in recent versions of Sphinx.
+        # Insert Doxygen target into the first signature node.
+        rst_node.children[0].insert(0, self.create_doxygen_target(node))
+
+        finder.content.extend(self.description(node))
+        return nodes
+
     def visit_define(self, node):
         declaration = node.name
         if node.param:
@@ -1227,9 +1248,11 @@ class SphinxRenderer(object):
 
     def dispatch_memberdef(self, node):
         """Dispatch handling of a memberdef node to a suitable visit method."""
-        if node.kind in ("function", "signal", "slot", "property") or \
+        if node.kind in ("function", "signal", "slot") or \
                 (node.kind == 'friend' and node.argsstring):
             return self.visit_function(node)
+        if node.kind == "property":
+            return self.visit_property(node)
         if node.kind == "enum":
             return self.visit_enum(node)
         if node.kind == "typedef":
